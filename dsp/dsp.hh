@@ -9,4 +9,6 @@ struct pixel_grayscale;
 
 std::vector<double> haar1d(std::vector<double> image);
 
+std::vector<double> ihaar1d(std::vector<double> transform);
+
 #endif

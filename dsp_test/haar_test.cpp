@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
 
     std::vector<pixel_grayscale> image_pixel_data( (std::istreambuf_iterator<char>(infile)), std::istreambuf_iterator<char>());
 
-    std::vector<double> test = {38,37,28,30,0,0,0,0};
+    std::vector<double> test = {38,37,28,30,98,29,10,111};
 
     std::vector<double> test2 = haar1d(test);
 
@@ -44,6 +44,8 @@ int main(int argc, char** argv) {
         std::cout << val << " ";
     }
     std::cout << std::endl;
+
+    ihaar1d(test2);
 
     return 0;
 }
