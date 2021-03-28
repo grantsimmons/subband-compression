@@ -22,7 +22,7 @@ void print_vector(VectorType in, std::string desc, int width = 0){
     int i = 0;
 
     for (int i = 0; i < in.size(); i++) {
-        std::cout << in[i] << " ";
+        std::cout << (double) in[i] << " ";
         if (width != 0) {
             if (i % width == width - 1)
                 std::cout << "\n";

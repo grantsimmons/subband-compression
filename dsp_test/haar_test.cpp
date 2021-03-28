@@ -32,7 +32,13 @@ int main(int argc, char** argv) {
     //Transform Image into Wavelet Decomposition
     std::vector<double> image_transform = haar2d(image_pixel_data,512,8,8);
 
-    //Compress
+    std::vector<uint8_t> reconstruction = ihaar2d(image_transform,512,8,8);
+
+    //print_vector(reconstruction, "RECONSTRUCTED IMAGE", 512);
+
+    //Scalar Quantize
+    //Entropy Encoding
+    //Huffman Compression
 
     return 0;
 }
