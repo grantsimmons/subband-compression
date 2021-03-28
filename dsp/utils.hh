@@ -5,7 +5,7 @@
 #include <string>
 
 template <class VectorIterator>
-std::vector<typename std::iterator_traits<VectorIterator>::value_type> every_nth(VectorIterator first, size_t n, size_t max) {
+std::vector<typename std::iterator_traits<VectorIterator>::value_type> extract_every_nth(VectorIterator first, size_t n, size_t max) {
     std::vector<typename std::iterator_traits<VectorIterator>::value_type> ret;
     //Yeah, this isn't great but it's easier to get the type from the iterator than to let the template know that the type has an iterator
 

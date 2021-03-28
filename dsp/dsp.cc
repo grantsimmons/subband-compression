@@ -1,11 +1,6 @@
 #include "dsp.hh"
 
-struct pixel_grayscale{
-    pixel_grayscale(int value): value(value){
-    }
-
-    uint8_t value;
-};
+#include "utils.hh"
 
 std::vector<double> haar1d(std::vector<double> image) {
     const int size_original = image.size();
@@ -54,8 +49,6 @@ std::vector<double> ihaar1d(std::vector<double> transform) {
             temp[j++] = transform[i] - transform[i + coefficient_count]; //We should check to make sure bounds are legal
         }
 
-        std::cout << std::endl;
-
         std::copy(temp.begin(), temp.end(), transform.begin());
 
         coefficient_count *= 2;
@@ -64,6 +57,50 @@ std::vector<double> ihaar1d(std::vector<double> transform) {
     return transform;
 }
 
-//void haar2d() {
+void haar2d(std::vector<double>& image, int image_w, int block_w, int block_h) {
+    int num_block_columns = image_w / block_w;
+    int num_block_rows = image.size() / image_w / block_h;
 
-//}
+    //std::cout << "Num Block Columns: " << num_block_columns << std::endl;
+    //std::cout << "Num Block Rows: " << num_block_rows << std::endl;
+
+    for (int block_r_index = 0; block_r_index < num_block_rows; block_r_index++) {
+        for (int block_c_index = 0; block_c_index < num_block_columns; block_c_index++) {
+            //Transform Block Row
+            int block_origin = (block_h * block_w) * (block_r_index * num_block_columns) + (block_w * block_c_index);
+            //std::cout << "\nBlock Origin: " << block_origin << std::endl;
+
+            //std::cout << "\nBlock " << block_c_index << ", " << block_r_index << " Rows" << std::endl;
+            for(int row_offset = 0; row_offset < block_h; row_offset++) {
+
+                std::vector<double>::iterator row_origin = std::next(image.begin(), block_origin + row_offset * image_w);
+                std::vector<double> block_row(row_origin, std::next(row_origin, block_w));
+
+                //print_vector(block_row, "\nBefore");
+
+                std::vector<double> block_row_transform = haar1d(block_row);
+                
+                //print_vector(block_row_transform, "After");
+
+                std::copy(block_row_transform.begin(), block_row_transform.end(), row_origin);
+            }
+
+            //Transform Block Column
+            //std::cout << "\nBlock " << block_c_index << ", " << block_r_index << " Columns" << std::endl;
+
+            for(int column_offset = 0; column_offset < block_w; column_offset++) {
+                std::vector<double>::iterator column_origin = std::next(image.begin(), block_origin + column_offset);
+                std::vector<double> block_column_copy = extract_every_nth(column_origin, image_w, block_h);
+                
+                //print_vector(block_column_copy, "\nBefore");
+                
+                block_column_copy = haar1d(block_column_copy);
+                //print_vector(block_column_copy, "After");
+
+                copy_every_nth(block_column_copy.begin(), block_column_copy.end(), column_origin, image_w, block_h);
+            }
+        }
+    }
+
+    //print_vector(image, "\nReal", image_w);
+}
