@@ -10,6 +10,6 @@ std::vector<double> haar1d(std::vector<double> image);
 
 std::vector<double> ihaar1d(std::vector<double> transform);
 
-void haar2d(std::vector<double>& image, int image_w, int block_h, int block_w);
+std::vector<double> haar2d(const std::vector<uint8_t>& image, int image_w, int block_h, int block_w);
 
 #endif
