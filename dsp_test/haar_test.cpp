@@ -27,7 +27,10 @@ int main(int argc, char** argv) {
     //Transform Image into Wavelet Decomposition
     std::vector<double> image_transform = haar2d<double>(image_pixel_data,512,8,8);
 
-    //TODO: Scalar Quantize
+    //TODO: Scalar Quantize for Lossy Compression
+    quantize(image_transform,0.1,8,8,8);
+
+    print_vector(image_transform, "QUANTIZED TRANSFORM", 512);
     //TODO: Entropy Encoding
     //TODO: Huffman Compression
 

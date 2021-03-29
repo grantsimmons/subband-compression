@@ -134,3 +134,18 @@ std::vector<double> ihaar1d(std::vector<double>& image_transform) {
 
     return image;
 }
+
+void quantize(std::vector<double>& source, const double bin_size, const int image_w, const int block_w, const int block_h) {
+    int image_h = source.size() / image_w;
+    
+    for (int y = 0; y < image_h; y++) {
+        for (int x = 0; x < image_w; x++) {
+            if (x % block_h == 0 && y % block_w == 0) {
+                continue;
+            }
+            else {
+                source[y * image_w + x] = floor(abs(source[y * image_w + x] / bin_size)) * sgn(source[y * image_w + x]);
+            }
+        }
+    }
+}

@@ -43,4 +43,9 @@ void copy_every_nth(InIterator b, InIterator e, OutIterator r, const size_t n, c
     }
 }
 
+template <typename T> 
+int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
 #endif
