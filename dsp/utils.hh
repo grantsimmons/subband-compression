@@ -1,8 +1,10 @@
 #ifndef SC_DSP_UTILS_H
 #define SC_DSP_UTILS_H
 
+#include <cstdint>
 #include <iostream>
 #include <string>
+#include <vector>
 
 template <class VectorIterator>
 std::vector<typename std::iterator_traits<VectorIterator>::value_type> extract_every_nth(VectorIterator element, const size_t n, const size_t max) {
