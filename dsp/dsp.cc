@@ -65,7 +65,7 @@ std::vector<double> ihaar1d(std::vector<double>& image_transform) {
     return image;
 }
 
-std::vector<double> haar2d(const std::vector<uint8_t>& image_ref, int image_w, int block_w, int block_h) {
+std::vector<double> haar2d(const std::vector<uint8_t>& image_ref, const int image_w, const int block_w, const int block_h) {
 
     std::vector<double> image_transform(image_ref.begin(), image_ref.end()); //Range construct for cast to double
 
@@ -118,7 +118,7 @@ std::vector<double> haar2d(const std::vector<uint8_t>& image_ref, int image_w, i
     return image_transform;
 }
 
-std::vector<uint8_t> ihaar2d(std::vector<double>& transform_ref, int image_w, int block_w, int block_h) {
+std::vector<uint8_t> ihaar2d(std::vector<double>& transform_ref, const int image_w, const int block_w, const int block_h) {
 
     std::vector<double> image(transform_ref.begin(), transform_ref.end());
 

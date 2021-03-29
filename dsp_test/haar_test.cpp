@@ -32,13 +32,25 @@ int main(int argc, char** argv) {
     //Transform Image into Wavelet Decomposition
     std::vector<double> image_transform = haar2d(image_pixel_data,512,8,8);
 
+    //TODO: Scalar Quantize
+    //TODO: Entropy Encoding
+    //TODO: Huffman Compression
+
+    //TODO: Write to File
+    //TODO: Read from File
+
+    //Reconstruct Bitmap from Wavelet Decomposition
     std::vector<uint8_t> reconstruction = ihaar2d(image_transform,512,8,8);
+    std::vector<double> test(reconstruction.begin(), reconstruction.end());
+
+    //Display Image
 
     //print_vector(reconstruction, "RECONSTRUCTED IMAGE", 512);
 
-    //Scalar Quantize
-    //Entropy Encoding
-    //Huffman Compression
+    if(image_pixel_data == reconstruction) {
+        std::cout << "SUCCESS" << std::endl;
+    }
+
 
     return 0;
 }
