@@ -2,6 +2,7 @@
 #define SC_DSP_UTILS_H
 
 #include <cstdint>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
@@ -48,4 +49,9 @@ int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
 
+static void dump_image(std::vector<uint8_t>& image, std::string filename = "img.x") {
+    std::ofstream bin(filename, std::ios::out | std::ios::binary);
+    bin.write((char*) &image[0], image.size());
+    bin.close();
+}
 #endif
