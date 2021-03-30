@@ -20,6 +20,8 @@ std::vector<double> ihaar1d(std::vector<double>& transform);
 
 //std::vector<uint8_t> ihaar2d(std::vector<double>& transform, const int image_w, const int block_h, const int block_w);
 
-void quantize(std::vector<double>& source, const double bin_size, const int image_w, const int block_w, const int block_h);
+void threshold_and_quantize(std::vector<double>& source, const double bin_size, const int image_w, const int block_w, const int block_h, const double threshold);
+
+void dequantize(std::vector<double>& source, const double bin_size, const int image_w, const int block_w, const int block_h);
 
 #endif
