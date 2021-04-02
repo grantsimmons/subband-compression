@@ -36,11 +36,8 @@ int main(int argc, char** argv) {
     std::vector<double> image_transform2 = image_transform;
 
     //Threshold and Scalar Quantize for Lossy Compression
-    threshold_and_quantize(image_transform,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size,quantization_threshold);
-    //dequantize(image_transform,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size);
-
-    threshold_and_quantize2(image_transform2,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size,quantization_threshold);
-    //dequantize2(image_transform2,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size);
+    std::vector<int> image_quant = threshold_and_quantize(image_transform,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size,quantization_threshold);
+    std::vector<double> image_dequant = dequantize(image_quant,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size);
 
     //TODO: Entropy Encoding
     //TODO: Huffman Compression
@@ -50,20 +47,19 @@ int main(int argc, char** argv) {
 
     //Reconstruct Bitmap from Wavelet Decomposition
     std::vector<uint8_t> reconstruction = ihaar2d<double>(image_transform,image_width,wavelet_block_size,wavelet_block_size);
-    std::vector<uint8_t> reconstruction2 = ihaar2d<double>(image_transform2,image_width,wavelet_block_size,wavelet_block_size);
     //std::vector<double> test(reconstruction.begin(), reconstruction.end());
 
-    std::vector<int> diff_vec = diff<int>(reconstruction, reconstruction2);
-    std::vector<uint8_t> u_diff_vec(diff_vec.begin(), diff_vec.end());
+    //std::vector<int> diff_vec = diff<int>(reconstruction, reconstruction2);
+    //std::vector<uint8_t> u_diff_vec(diff_vec.begin(), diff_vec.end());
 
     //Display Image
     dump_image(image_pixel_data, "orig.x");
     dump_image(reconstruction, "reconstruction.x");
-    dump_image(reconstruction2, "reconstruction_no.x");
-    dump_image(u_diff_vec, "diff.x");
+    //dump_image(reconstruction2, "reconstruction_no.x");
+    //dump_image(u_diff_vec, "diff.x");
 
-    int non_zero = print_vector(diff_vec, "DIFF", 512);
-    std::cout << "NON_ZERO: " << non_zero << std::endl;
+    //int non_zero = print_vector(diff_vec, "DIFF", 512);
+    //std::cout << "NON_ZERO: " << non_zero << std::endl;
 
     //print_vector(reconstruction, "RECONSTRUCTED IMAGE", 512);
 
@@ -97,27 +93,44 @@ int main(int argc, char** argv) {
 
     auto v_transform = haar2d<double>(v,16,8,8);
 
-    auto test = extract_levels_from_serial(image_transform,512,8,8);
+    auto test = extract_levels_from_serial<int>(image_quant,512,8,8);
 
     print_vector(v_transform,"TRANSFORM",16,6);
 
     int initial = 64;
 
     print_vector(test[0][2],"TEST0D",initial,6);
-    auto test_map = generate_frequency_table<double>(test[0][2]);
+
+    auto test_map = generate_frequency_table<int>(image_quant);
+    //auto test_map = generate_frequency_table<int>(test[2][2]);
     for (auto test : test_map) {
         std::cout << (int) test.first << ": " << test.second << std::endl;
     }
-    for(int i = 1; i < 4; i++) {
-        for(int j = 0; j < 3; j++) {
-            auto test_map = generate_frequency_table<double>(test[i][j]);
-            std::cout << i << "," << j << std::endl;
-            //print_vector(test[i][j],"TEST",initial,6);
-            for (auto test : test_map) {
-                std::cout << (int) test.first << ": " << test.second << std::endl;
-            }
-        }
+
+    InternalNode* test1 = generate_huffman_tree<int>(test_map);
+
+    std::map<uint32_t,int> serialize_test = serialize_huffman_tree<int>(test1,0);
+
+    generate_canonical_huffman_code<int>(serialize_test);
+
+    print2D<int>(test1);
+
+    for(auto val : serialize_test) {
+        std::cout << val.first << " " << val.second << std::endl;
     }
+
+    
+
+    // for(int i = 1; i < 4; i++) {
+    //     for(int j = 0; j < 3; j++) {
+    //         auto test_map = generate_frequency_table<double>(test[i][j]);
+    //         std::cout << i << "," << j << std::endl;
+    //         print_vector(test[i][j],"TEST",initial);
+    //         for (auto test : test_map) {
+    //             std::cout << (int) test.first << ": " << test.second << std::endl;
+    //         }
+    //     }
+    // }
     // print_vector(test[1][0],"TEST1H",initial,6);
     // print_vector(test[1][1],"TEST1V",initial,6);
     // print_vector(test[1][2],"TEST1D",initial,6);
