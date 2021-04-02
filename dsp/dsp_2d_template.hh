@@ -19,7 +19,6 @@ std::vector<T> haar2d(const std::vector<uint8_t>& image_ref, const int image_w, 
             int block_origin = (block_h * block_w) * (block_r_index * num_block_columns) + (block_w * block_c_index);
 
             for(int row_offset = 0; row_offset < block_h; row_offset++) {
-
                 typename std::vector<T>::iterator row_origin = std::next(image_transform.begin(), block_origin + row_offset * image_w);
                 std::vector<T> block_row(row_origin, std::next(row_origin, block_w));
 
