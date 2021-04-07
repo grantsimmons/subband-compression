@@ -111,6 +111,15 @@ std::vector<T> diff(std::vector<U> one, std::vector<U> two) {
     return diff_vector;
 }
 
+template <typename T,typename U>
+std::map<U,T> invert_map(std::map<T,U>& in) {
+    std::map<U,T> ret;
+    for(auto entry : in) {
+        ret[entry.second] = entry.first;
+    }
+    return ret;
+}
+
 static void dump_image(std::vector<uint8_t>& image, std::string filename = "img.x") {
     std::ofstream bin(filename, std::ios::out | std::ios::binary);
     bin.write((char*) &image[0], image.size());

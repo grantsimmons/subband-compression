@@ -149,14 +149,14 @@ int clz_wrapper(X in) {
 }
 
 template <typename T>
-std::pair<std::vector<std::pair<T,uint32_t>>,std::map<uint32_t,T>> generate_canonical_huffman_code(std::map<uint32_t,T>& huff_map) { //Assume that the incoming map is already sorted by huffman code
+std::pair<std::vector<std::pair<T,uint32_t>>,std::map<T,uint32_t>> generate_canonical_huffman_code(std::map<uint32_t,T>& huff_map) { //Assume that the incoming map is already sorted by huffman code
 
     std::vector<std::pair<T,uint32_t>> ret_vec; //I wanted to use a map, but we need a specific order with identical keys, so I'll just use a vector
 
     uint32_t canonical_value = 0;
 
     //std::unordered_map<T,uint32_t> canonical_translation_table; //Map canonical code to value
-    std::map<uint32_t,T> canonical_translation_table; //Map canonical code to value
+    std::map<T,uint32_t> canonical_translation_table; //Map canonical code to value
     auto map_itr = huff_map.begin();
 
     while(map_itr != huff_map.end()) {
@@ -185,7 +185,7 @@ std::pair<std::vector<std::pair<T,uint32_t>>,std::map<uint32_t,T>> generate_cano
                 std::cout << clz_wrapper(canonical_value) << " (" << canonical_value << ") " << " < " << itr->second << "   Shifting" << std::endl;
                 canonical_value = canonical_value << ((uint32_t) itr->second - (uint32_t) clz_wrapper(canonical_value));
             }
-            canonical_translation_table[canonical_value] = itr->first;
+            canonical_translation_table[itr->first] = canonical_value;
 
             std::cout << "Value: " << itr->first << " Bit Length: " << itr->second << " Canonical Value: " << canonical_value << std::endl;
             canonical_value++;
@@ -204,6 +204,18 @@ std::pair<std::vector<std::pair<T,uint32_t>>,std::map<uint32_t,T>> generate_cano
     std::cout << "Entry Count: " << canonical_translation_table.size() << std::endl; 
     
     return {ret_vec, canonical_translation_table};
+}
+
+template <typename T, typename U>
+std::vector<U> translate_canonical(std::vector<T>& source, std::map<T,U>& translation_table) {
+    std::vector<U> canon;
+    for (auto src_val : source) {
+        if (translation_table.find(src_val) != translation_table.end()) 
+            canon.push_back(translation_table[src_val]);
+        else 
+            std::cout << "No canonical translation found for symbol \"" << src_val << "\"" << std::endl;
+    }
+    return canon;
 }
 
 void build_image_file() {

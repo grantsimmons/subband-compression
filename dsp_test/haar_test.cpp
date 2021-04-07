@@ -101,19 +101,38 @@ int main(int argc, char** argv) {
 
     print_vector(test[0][2],"TEST0D",initial,6);
 
-    auto test_map = generate_frequency_table<int>(image_quant);
+    auto test_map = generate_frequency_table<int>(image_quant); //Map Wavelet Coefficient Values to the number of their occurrences
     //auto test_map = generate_frequency_table<int>(test[2][2]);
     for (auto test : test_map) {
         std::cout << (int) test.first << ": " << test.second << std::endl;
     }
 
-    InternalNode* test1 = generate_huffman_tree<int>(test_map);
+    InternalNode* test1 = generate_huffman_tree<int>(test_map); //Generate Huffman encoding based on frequency information
 
-    std::map<uint32_t,int> serialize_test = serialize_huffman_tree<int>(test1,0);
+    std::map<uint32_t,int> serialize_test = serialize_huffman_tree<int>(test1,0); //Serialize the binary tree into a linear map
 
-    generate_canonical_huffman_code<int>(serialize_test);
+    auto [vec,map] = generate_canonical_huffman_code<int>(serialize_test); //Generate a canonical Huffman code based on the serialized Huffman code bit lengths
 
-    print2D<int>(test1);
+    std::vector<uint32_t> translated = translate_canonical<int,uint32_t>(image_quant, map); //Translate the wavelet coefficients into the new canonical mapping
+
+    std::map<uint32_t,int> inverse = invert_map<int,uint32_t>(map);
+
+    std::vector<int> recovered = translate_canonical<uint32_t,int>(translated,inverse); //Generate a fake map reconstruction
+
+    std::vector<int> canonical_loss = diff<int,int>(image_quant,recovered);
+    print_vector(canonical_loss,"CANON LOSS",512);
+
+    int count = 0;
+    for(auto val : canonical_loss) {
+        if(val > 0) {
+            count++;
+        }
+    }
+    std::cout << "Diff Count: " << count << std::endl;
+
+    //print_vector(translated,"CANONICAL",512);
+
+    //print2D<int>(test1);
 
     for(auto val : serialize_test) {
         std::cout << val.first << " " << val.second << std::endl;

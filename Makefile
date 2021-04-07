@@ -3,7 +3,7 @@ IMG_X ?= 512
 IMG_Y ?= 512
 
 default:
-	g++ -g -Wall dsp_test/haar_test.cpp dsp/dsp.cc -o haar_test.out -I dsp
+	g++ --std=c++17 -g -Wall dsp_test/haar_test.cpp dsp/dsp.cc -o haar_test.out -I dsp
 
 .PHONY: img
 
