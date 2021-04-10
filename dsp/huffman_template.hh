@@ -142,33 +142,40 @@ std::map<uint32_t,T> serialize_huffman_tree(Node* root, uint32_t index) {
     return ret_map;
 }
 
-template <typename X>
-int clz_wrapper(X in) {
-    int num_zeroes = sizeof(X) * CHAR_BIT - clz(in);
-    num_zeroes = num_zeroes == 0 ? 1 : num_zeroes; //Need to ensure the most common case counts for 1 bit instead of zero bits
-}
+template <typename T>
+struct canonical_huffman_table {
+    std::vector<std::pair<T,uint32_t>> canonical_table; //Ordered vector of Huffman codes with their canonical counterparts
+    std::map<T,uint32_t> translation_map; //Translates Huffman values to canonical codes
+    std::map<uint8_t,uint16_t> metadata; //Bit length -> Number of entries, later written directly to destination file
+    uint16_t max_bits; //Maximum bit length for canonical code
+    
+    canonical_huffman_table() {
+    }
+};
 
 template <typename T>
-std::pair<std::vector<std::pair<T,uint32_t>>,std::map<T,uint32_t>> generate_canonical_huffman_code(std::map<uint32_t,T>& huff_map) { //Assume that the incoming map is already sorted by huffman code
-
-    std::vector<std::pair<T,uint32_t>> ret_vec; //I wanted to use a map, but we need a specific order with identical keys, so I'll just use a vector
+canonical_huffman_table<T> generate_canonical_huffman_code(std::map<uint32_t,T>& huff_map) { //Assume that the incoming map is already sorted by huffman code
+    canonical_huffman_table<T> ret;
 
     uint32_t canonical_value = 0;
 
-    //std::unordered_map<T,uint32_t> canonical_translation_table; //Map canonical code to value
-    std::map<T,uint32_t> canonical_translation_table; //Map canonical code to value
     auto map_itr = huff_map.begin();
 
     while(map_itr != huff_map.end()) {
         auto temp_itr = map_itr;
 
-        uint32_t num_key_bits = clz_wrapper(map_itr->first);
+        uint32_t num_key_bits = bits_required(map_itr->first); //TODO: Make uint8_t to match metadata table
+        uint16_t entry_counter = 0; //Count number of entries with num_key_bits index length
         std::cout << "Finding values with indexes " << num_key_bits << " bits long" << std::endl;
 
-        while(clz_wrapper(temp_itr->first) == num_key_bits) {
+        while(bits_required(temp_itr->first) == num_key_bits) {
             std::cout << temp_itr->first << std::endl;
             std::advance(temp_itr,1);
+            entry_counter++;
         }
+
+        std::cout << "Found " << entry_counter << " entries with " << num_key_bits << " bits" << std::endl;
+        ret.metadata[num_key_bits] = entry_counter;
 
         std::cout << "Sorting entries..." << std::endl;
 
@@ -181,29 +188,31 @@ std::pair<std::vector<std::pair<T,uint32_t>>,std::map<T,uint32_t>> generate_cano
         });
 
         for(auto itr = pairs.begin(); itr != pairs.end(); std::advance(itr,1)) {
-            if(clz_wrapper(canonical_value) < itr->second) {
-                std::cout << clz_wrapper(canonical_value) << " (" << canonical_value << ") " << " < " << itr->second << "   Shifting" << std::endl;
-                canonical_value = canonical_value << ((uint32_t) itr->second - (uint32_t) clz_wrapper(canonical_value));
+            if(bits_required(canonical_value) < itr->second) {
+                std::cout << bits_required(canonical_value) << " (" << canonical_value << ") " << " < " << itr->second << "   Shifting" << std::endl;
+                canonical_value = canonical_value << ((uint32_t) itr->second - (uint32_t) bits_required(canonical_value));
             }
-            canonical_translation_table[itr->first] = canonical_value;
+            ret.translation_map[itr->first] = canonical_value;
 
             std::cout << "Value: " << itr->first << " Bit Length: " << itr->second << " Canonical Value: " << canonical_value << std::endl;
             canonical_value++;
         }
 
-        ret_vec.insert(ret_vec.end(), pairs.begin(), pairs.end());
+        ret.canonical_table.insert(ret.canonical_table.end(), pairs.begin(), pairs.end());
 
         map_itr = temp_itr;
+        
+        ret.max_bits = num_key_bits;
     }
 
-    std::cout << "Canonical Translation Table" << std::endl;
-    for(auto pair : canonical_translation_table) {
-        std::cout << "Key: " << pair.first << ", Canonical Value: " << pair.second << std::endl;
-    }
+    //std::cout << "Canonical Translation Table" << std::endl;
+    //for(auto pair : canonical_translation_table) {
+    //    std::cout << "Key: " << pair.first << ", Canonical Value: " << pair.second << std::endl;
+    //}
 
-    std::cout << "Entry Count: " << canonical_translation_table.size() << std::endl; 
-    
-    return {ret_vec, canonical_translation_table};
+    //std::cout << "Entry Count: " << canonical_translation_table.size() << std::endl; 
+
+    return ret;
 }
 
 template <typename T, typename U>

@@ -2,6 +2,7 @@
 
 #include "dsp.hh"
 #include "dsp_2d_template.hh"
+#include "fileio_template.hh"
 #include "huffman_template.hh"
 #include "utils.hh"
 
@@ -111,11 +112,12 @@ int main(int argc, char** argv) {
 
     std::map<uint32_t,int> serialize_test = serialize_huffman_tree<int>(test1,0); //Serialize the binary tree into a linear map
 
-    auto [vec,map] = generate_canonical_huffman_code<int>(serialize_test); //Generate a canonical Huffman code based on the serialized Huffman code bit lengths
+    //auto [vec,map,meta] = generate_canonical_huffman_code<int>(serialize_test); //Generate a canonical Huffman code based on the serialized Huffman code bit lengths
+    canonical_huffman_table<int> canon = generate_canonical_huffman_code<int>(serialize_test); //Generate a canonical Huffman code based on the serialized Huffman code bit lengths
 
-    std::vector<uint32_t> translated = translate_canonical<int,uint32_t>(image_quant, map); //Translate the wavelet coefficients into the new canonical mapping
+    std::vector<uint32_t> translated = translate_canonical<int,uint32_t>(image_quant, canon.translation_map); //Translate the wavelet coefficients into the new canonical mapping
 
-    std::map<uint32_t,int> inverse = invert_map<int,uint32_t>(map);
+    std::map<uint32_t,int> inverse = invert_map<int,uint32_t>(canon.translation_map);
 
     std::vector<int> recovered = translate_canonical<uint32_t,int>(translated,inverse); //Generate a fake map reconstruction
 
@@ -132,12 +134,28 @@ int main(int argc, char** argv) {
 
     //print_vector(translated,"CANONICAL",512);
 
-    //print2D<int>(test1);
-
     for(auto val : serialize_test) {
         std::cout << val.first << " " << val.second << std::endl;
     }
 
+    image_header header(512,512,8,canon.max_bits,true,0);
+
+    io_write_buf out_buf("test.bin");
+    out_buf.write_header(header);
+    out_buf.write_canonical_huffman_table<int>(canon);
+    out_buf.write_data<uint32_t>(translated);
+    header.print();
+    out_buf.close();
+
+    io_read_buf in_buf("test.bin");
+    image_header test_header = in_buf.read_header();
+    canonical_huffman_table<int> recovered_table = in_buf.read_canonical_huffman_table<int>();
+    std::cout << (recovered_table.canonical_table == canon.canonical_table ? "HOLY SHIT" : "FUCK") << std::endl;
+    for(int i = 0; i < canon.canonical_table.size(); i++) {
+        std::cout << "Canon: " << canon.canonical_table[i].first << ", " << canon.canonical_table[i].second << " ";
+        std::cout << "Recovered: " << recovered_table.canonical_table[i].first << ", " << recovered_table.canonical_table[i].second << std::endl;
+    }
+    test_header.print();
     
 
     // for(int i = 1; i < 4; i++) {

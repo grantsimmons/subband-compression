@@ -10,7 +10,11 @@
 #include <map>
 #include <bits/stdc++.h>
 
-#define clz(x) __builtin_clz(x)
+template <typename X>
+int bits_required(X in) {
+    int num_zeroes = sizeof(X) * CHAR_BIT - __builtin_clz(in);
+    num_zeroes = num_zeroes == 0 ? 1 : num_zeroes; //Need to ensure the most common case counts for 1 bit instead of zero bits
+}
 
 template <class VectorIterator>
 std::vector<typename std::iterator_traits<VectorIterator>::value_type> extract_every_nth(VectorIterator element, const size_t n, const size_t max) {
@@ -30,7 +34,7 @@ template <typename T>
 std::map<int,std::map<int,std::vector<T>>> extract_levels_from_serial(std::vector<T>& serial, const int image_w, const int block_h, const int block_w) {
     int levels = 0;
     if(block_h == block_w &&  (!(block_h & (block_h - 1)) && block_h)) { // Check that block_h and block_w are equal and power of 2
-        levels = sizeof(decltype(block_h)) * CHAR_BIT - clz(block_h) - 1; // Get log 2 of power of 2. Thanks https://stackoverflow.com/questions/47074126/log2-of-an-integer-that-is-a-power-of-2
+        levels = sizeof(decltype(block_h)) * CHAR_BIT - __builtin_clz(block_h) - 1; // Get log 2 of power of 2. Thanks https://stackoverflow.com/questions/47074126/log2-of-an-integer-that-is-a-power-of-2
     }
 
     std::map<int,std::map<int,std::vector<T>>> ret;
@@ -40,8 +44,8 @@ std::map<int,std::map<int,std::vector<T>>> extract_levels_from_serial(std::vecto
         int block_y_index = (i / image_w) % block_h;
         int block_x_index = i % block_w;
 
-        int block_x_level = block_x_index == 0 ? 0 : sizeof(decltype(block_x_index)) * CHAR_BIT - clz(block_x_index);
-        int block_y_level = block_y_index == 0 ? 0 : sizeof(decltype(block_y_index)) * CHAR_BIT - clz(block_y_index);
+        int block_x_level = block_x_index == 0 ? 0 : sizeof(decltype(block_x_index)) * CHAR_BIT - __builtin_clz(block_x_index);
+        int block_y_level = block_y_index == 0 ? 0 : sizeof(decltype(block_y_index)) * CHAR_BIT - __builtin_clz(block_y_index);
 
         int index_level;
         if(block_x_level > block_y_level) {
