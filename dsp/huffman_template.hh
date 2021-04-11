@@ -145,7 +145,8 @@ std::map<uint32_t,T> serialize_huffman_tree(Node* root, uint32_t index) {
 template <typename T>
 struct canonical_huffman_table {
     std::vector<std::pair<T,uint32_t>> canonical_table; //Ordered vector of Huffman codes with their canonical counterparts
-    std::map<T,uint32_t> translation_map; //Translates Huffman values to canonical codes
+    std::map<T,uint32_t> translation_map; //Translates symbols to canonical codes
+    std::map<uint32_t,T> inverse_map; //Translates canonical codes to symbols
     std::map<uint8_t,uint16_t> metadata; //Bit length -> Number of entries, later written directly to destination file
     uint16_t max_bits; //Maximum bit length for canonical code
     

@@ -119,6 +119,7 @@ class io_write_buf {
 
 };
 
+template <typename T>
 class io_read_buf {
     private:
 
@@ -146,6 +147,7 @@ class io_read_buf {
     public:
 
         image_header header;
+        canonical_huffman_table<T> canon;
 
         io_read_buf(std::string in_file) : file_name(in_file), buf(0), num_bits_read(8) {
             in = std::ifstream(in_file, std::ios::binary);
@@ -155,10 +157,10 @@ class io_read_buf {
             in.close();
         }
 
-        template <typename T>
-        T read_bits(int bit_length) {
+        template <typename X>
+        X read_bits(int bit_length) {
             //std::cout << "Reading " << bit_length << " bits from \"" << file_name << "\"" << std::endl;
-            T ret_val = 0;
+            X ret_val = 0;
             for (int i = bit_length - 1; i >= 0; i--) {
                 if (num_bits_read == 8) {
                     read_byte();
@@ -181,9 +183,8 @@ class io_read_buf {
             return header;
         }
 
-        template <typename T>
-        canonical_huffman_table<T> read_canonical_huffman_table() {
-            canonical_huffman_table<T> canon; //FIXME: Template
+        //template <typename T>
+        canonical_huffman_table<T>& read_canonical_huffman_table() {
             for (int bit_length = 1; bit_length <= header.max_bit_length; bit_length++) {
                 canon.metadata[bit_length] = read_bits<uint16_t>(16);
             }
@@ -192,7 +193,10 @@ class io_read_buf {
             for(auto entry : canon.metadata) {
                 std::cout << "Bit length: " << (int) entry.first << " Recovered Value: " << entry.second << std::endl;
                 for(int i = 0; i < entry.second; i++) {
-                    canon.canonical_table.push_back(std::pair<T,uint32_t>(read_bits<T>(sizeof(T) * CHAR_BIT), canonical_index));
+                    T symbol = read_bits<T>(sizeof(T) * CHAR_BIT);
+                    canon.canonical_table.push_back(std::pair<T,uint32_t>(symbol, entry.first));
+                    canon.translation_map[symbol] = canonical_index;
+                    canon.inverse_map[canonical_index] = symbol;
                     //std::cout << "Pushing value " << test << " for Bit length " << (int) entry.first << " with canonical index " << canonical_index << std::endl;
                     canonical_index++;
                 }
@@ -203,6 +207,28 @@ class io_read_buf {
             //}
 
             return canon;
+        }
+
+        std::vector<T> read_data() {
+            std::vector<T> ret;
+            uint32_t test_value;
+            uint8_t counter = 0;
+            for(int y = 0; y < header.y; y++) {
+                for(int x = 0; x < header.x; x++) {
+                    test_value = test_value << 1 | read_bits<uint32_t>(1);
+                    counter++;
+                    if((counter > 0) && canon.inverse_map.find(test_value) != canon.inverse_map.end()) {
+                        std::cout << "Found canonical value: " << test_value << " Mapping: " << canon.inverse_map[test_value] << std::endl;
+                        ret.push_back(canon.inverse_map[test_value]);
+                        test_value = 0;
+                        counter = 0;
+                    }
+                    if(bits_required(test_value) > header.max_bit_length) {
+                        std::cout << "ERROR: Value exceeds maximum bit length. You messed up." << std::endl;
+                    }
+                }
+            }
+            return ret;
         }
 
         void close() {

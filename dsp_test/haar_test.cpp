@@ -147,14 +147,17 @@ int main(int argc, char** argv) {
     header.print();
     out_buf.close();
 
-    io_read_buf in_buf("test.bin");
+    io_read_buf<int> in_buf("test.bin");
     image_header test_header = in_buf.read_header();
-    canonical_huffman_table<int> recovered_table = in_buf.read_canonical_huffman_table<int>();
+    canonical_huffman_table<int> recovered_table = in_buf.read_canonical_huffman_table();
     std::cout << (recovered_table.canonical_table == canon.canonical_table ? "HOLY SHIT" : "FUCK") << std::endl;
     for(int i = 0; i < canon.canonical_table.size(); i++) {
         std::cout << "Canon: " << canon.canonical_table[i].first << ", " << canon.canonical_table[i].second << " ";
         std::cout << "Recovered: " << recovered_table.canonical_table[i].first << ", " << recovered_table.canonical_table[i].second << std::endl;
     }
+    std::vector<int> hail_mary = in_buf.read_data();
+    std::cout << "Vector size: " << hail_mary.size() << std::endl;
+    std::cout << "Original size: " << translated.size() << std::endl;
     test_header.print();
     
 

@@ -14,6 +14,7 @@ template <typename X>
 int bits_required(X in) {
     int num_zeroes = sizeof(X) * CHAR_BIT - __builtin_clz(in);
     num_zeroes = num_zeroes == 0 ? 1 : num_zeroes; //Need to ensure the most common case counts for 1 bit instead of zero bits
+    return num_zeroes;
 }
 
 template <class VectorIterator>
