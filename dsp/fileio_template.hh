@@ -215,16 +215,20 @@ class io_read_buf {
             uint8_t counter = 0;
             for(int y = 0; y < header.y; y++) {
                 for(int x = 0; x < header.x; x++) {
-                    test_value = test_value << 1 | read_bits<uint32_t>(1);
+                    test_value = (test_value << 1) | read_bits<uint32_t>(1);
                     counter++;
-                    if((counter > 0) && canon.inverse_map.find(test_value) != canon.inverse_map.end()) {
-                        std::cout << "Found canonical value: " << test_value << " Mapping: " << canon.inverse_map[test_value] << std::endl;
+                    while(canon.inverse_map.find(test_value) == canon.inverse_map.end()) {
+                        test_value = (test_value << 1) | read_bits<uint32_t>(1);
+                        counter++;
+                        if(counter > header.max_bit_length) {
+                            std::cout << "ERROR: Value exceeds maximum bit length. You messed up." << std::endl;
+                        }
+                    }
+                    if(canon.inverse_map.find(test_value) != canon.inverse_map.end()) {
+                        std::cout << "Found canonical value: " << test_value << " Mapping: " << canon.inverse_map[test_value] << std::endl;    
                         ret.push_back(canon.inverse_map[test_value]);
                         test_value = 0;
                         counter = 0;
-                    }
-                    if(bits_required(test_value) > header.max_bit_length) {
-                        std::cout << "ERROR: Value exceeds maximum bit length. You messed up." << std::endl;
                     }
                 }
             }

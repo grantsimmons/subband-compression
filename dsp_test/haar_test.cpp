@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
     //TODO: Read from File
 
     //Reconstruct Bitmap from Wavelet Decomposition
-    std::vector<uint8_t> reconstruction = ihaar2d<double>(image_transform,image_width,wavelet_block_size,wavelet_block_size);
+    std::vector<uint8_t> reconstruction = ihaar2d<double>(image_dequant,image_width,wavelet_block_size,wavelet_block_size);
     //std::vector<double> test(reconstruction.begin(), reconstruction.end());
 
     //std::vector<int> diff_vec = diff<int>(reconstruction, reconstruction2);
@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
     io_read_buf<int> in_buf("test.bin");
     image_header test_header = in_buf.read_header();
     canonical_huffman_table<int> recovered_table = in_buf.read_canonical_huffman_table();
-    std::cout << (recovered_table.canonical_table == canon.canonical_table ? "HOLY SHIT" : "FUCK") << std::endl;
+    std::cout << (recovered_table.canonical_table == canon.canonical_table ? "OH YES" : "OH NO") << std::endl;
     for(int i = 0; i < canon.canonical_table.size(); i++) {
         std::cout << "Canon: " << canon.canonical_table[i].first << ", " << canon.canonical_table[i].second << " ";
         std::cout << "Recovered: " << recovered_table.canonical_table[i].first << ", " << recovered_table.canonical_table[i].second << std::endl;
@@ -158,7 +158,13 @@ int main(int argc, char** argv) {
     std::vector<int> hail_mary = in_buf.read_data();
     std::cout << "Vector size: " << hail_mary.size() << std::endl;
     std::cout << "Original size: " << translated.size() << std::endl;
+    print_vector<std::vector<int>>(diff<int,int>(image_quant, hail_mary), "ACTUAL RECONSTRUCTION", 512);
+    std::vector<double> will_this_work_d = dequantize(hail_mary,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size);
+    std::vector<uint8_t> yes_it_will = ihaar2d<double>(will_this_work_d,512,8,8);
+    dump_image(yes_it_will, "wtf.x");
     test_header.print();
+
+
     
 
     // for(int i = 1; i < 4; i++) {
