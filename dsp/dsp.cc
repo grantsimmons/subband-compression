@@ -164,13 +164,13 @@ std::vector<double> dequantize(std::vector<int> source, const double bin_size, c
     
     for (int y = 0; y < image_h; y++) {
         for (int x = 0; x < image_w; x++) {
-            if (x % block_w == 0 && y % block_h == 0) {
-                continue;
-            }
-            else {
+            //if (x % block_w == 0 && y % block_h == 0) {
+            //    continue;
+            //}
+            //else {
                 source[y * image_w + x] = abs(source[y * image_w + x] * bin_size) * sgn(source[y * image_w + x]);
                 //vQ = sign(vI) .* (abs(vI)+.5) * T;
-            }
+            //}
         }
     }
 
