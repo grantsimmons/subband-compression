@@ -79,10 +79,15 @@ class io_write_buf {
         }
 
         void write_header(image_header& header) {
+            std::cout << "Writing " << sizeof(decltype(header.x)) * CHAR_BIT << " bits for header.x" << std::endl;
             write_bits<decltype(header.x)>(header.x,sizeof(decltype(header.x)) * CHAR_BIT);
+            std::cout << "Writing " << sizeof(decltype(header.y)) * CHAR_BIT << " bits for header.y" << std::endl;
             write_bits<decltype(header.y)>(header.y,sizeof(decltype(header.y)) * CHAR_BIT);
+            std::cout << "Writing " << sizeof(decltype(header.block_size)) * CHAR_BIT << " bits for header.block_size" << std::endl;
             write_bits<decltype(header.block_size)>(header.block_size,sizeof(decltype(header.block_size)) * CHAR_BIT);
+            std::cout << "Writing " << sizeof(decltype(header.max_bit_length)) * CHAR_BIT << " bits for header.max_bit_length" << std::endl;
             write_bits<decltype(header.max_bit_length)>(header.max_bit_length,sizeof(decltype(header.max_bit_length)) * CHAR_BIT);
+            std::cout << "Writing " << sizeof(decltype(header.flag_data)) * CHAR_BIT << " bits for header.flag_data" << std::endl;
             write_bits<decltype(header.flags)>(header.flags,sizeof(decltype(header.flags)) * CHAR_BIT);
         }
 
@@ -174,10 +179,15 @@ class io_read_buf {
         }
 
         image_header& read_header() {
+            std::cout << "Reading " << sizeof(decltype(header.x)) * CHAR_BIT << " bits for header.x" << std::endl;
             header.x = read_bits<decltype(header.x)>(sizeof(decltype(header.x)) * CHAR_BIT);
+            std::cout << "Reading " << sizeof(decltype(header.y)) * CHAR_BIT << " bits for header.y" << std::endl;
             header.y = read_bits<decltype(header.y)>(sizeof(decltype(header.y)) * CHAR_BIT);
+            std::cout << "Reading " << sizeof(decltype(header.block_size)) * CHAR_BIT << " bits for header.block_size" << std::endl;
             header.block_size = read_bits<decltype(header.block_size)>(sizeof(decltype(header.block_size)) * CHAR_BIT);
+            std::cout << "Reading " << sizeof(decltype(header.max_bit_length)) * CHAR_BIT << " bits for header.max_bit_length" << std::endl;
             header.max_bit_length = read_bits<decltype(header.max_bit_length)>(sizeof(decltype(header.max_bit_length)) * CHAR_BIT);
+            std::cout << "Reading " << sizeof(decltype(header.flag_data)) * CHAR_BIT << " bits for header.flag_data" << std::endl;
             header.flags = read_bits<decltype(header.flags)>(sizeof(decltype(header.flag_data)) * CHAR_BIT);
             
             return header;
@@ -215,8 +225,8 @@ class io_read_buf {
             uint8_t counter = 0;
             for(int y = 0; y < header.y; y++) {
                 for(int x = 0; x < header.x; x++) {
-                    test_value = (test_value << 1) | read_bits<uint32_t>(1);
-                    counter++;
+                    test_value = read_bits<uint32_t>(1);
+                    counter = 1;
                     while(canon.inverse_map.find(test_value) == canon.inverse_map.end()) {
                         test_value = (test_value << 1) | read_bits<uint32_t>(1);
                         counter++;

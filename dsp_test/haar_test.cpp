@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     const double quantization_bin_size = 0.25; //0.25
     const int wavelet_block_size = 8; //8
     const int image_width = 512;
-    const double quantization_threshold = 0.8; //0.8
+    const double quantization_threshold = 0.8; //Anything under 0.8 breaks
 
     //Transform Image into Wavelet Decomposition
     std::vector<double> image_transform = haar2d<double>(image_pixel_data,image_width,wavelet_block_size,wavelet_block_size);
@@ -107,14 +107,12 @@ int main(int argc, char** argv) {
     std::vector<int> hail_mary = in_buf.read_data();
     std::cout << "Vector size: " << hail_mary.size() << std::endl;
     std::cout << "Original size: " << translated.size() << std::endl;
-    print_vector<std::vector<int>>(diff<int,int>(image_quant, hail_mary), "ACTUAL RECONSTRUCTION", 512);
+    print_vector<std::vector<int>>(diff<int,int>(image_quant, hail_mary), "ACTUAL RECONSTRUCTION DIFF", 512);
     std::vector<double> will_this_work_d = dequantize(hail_mary,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size);
     std::vector<uint8_t> yes_it_will = ihaar2d<double>(will_this_work_d,512,8,8);
+    print_vector<std::vector<uint8_t>>(yes_it_will, "ACTUAL RECONSTRUCTION", 512);
     dump_image(yes_it_will, "wtf.x");
     test_header.print();
-
-
-    
 
     // for(int i = 1; i < 4; i++) {
     //     for(int j = 0; j < 3; j++) {
