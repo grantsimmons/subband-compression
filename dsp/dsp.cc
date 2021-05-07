@@ -135,31 +135,39 @@ std::vector<double> ihaar1d(std::vector<double>& image_transform) {
     return image;
 }
 
-std::vector<int> threshold_and_quantize(std::vector<double> source, const double bin_size, const int image_w, const int block_w, const int block_h, const double threshold = 0) {
+std::vector<int> threshold_and_quantize(std::vector<double>& source, const int bins_per_step, const bool invert_bins_per_step, const int image_w, const int block_w, const int block_h, const double threshold = 0) {
     int image_h = source.size() / image_w;
-    
+
+    std::vector<int> ret(source.size());
+
+    double bin_size = invert_bins_per_step ? (double) 1.0 / bins_per_step : bins_per_step;
+
+    std::cout << "RIGHT HERE " << bins_per_step << " " << invert_bins_per_step << " " << bin_size << std::endl;
+
     for (int y = 0; y < image_h; y++) {
         for (int x = 0; x < image_w; x++) {
-                if (abs(source[y * image_w + x]) < threshold)
-                    source[y * image_w + x] = 0;
+                if (abs(source[y * image_w + x]) < threshold) {
+                    ret[y * image_w + x] = 0;
+                    continue;
+                }
 
-                source[y * image_w + x] = floor(abs(source[y * image_w + x] / bin_size)) * sgn(source[y * image_w + x]);
+                ret[y * image_w + x] = floor(abs(source[y * image_w + x] * bin_size)) * sgn(source[y * image_w + x]);
         }
     }
-
-    std::vector<int> ret(source.begin(), source.end());
 
     return ret;
 }
 
-std::vector<double> dequantize(std::vector<int> source, const double bin_size, const int image_w, const int block_w, const int block_h) {
+std::vector<double> dequantize(std::vector<int>& source, const int bins_per_step, const bool invert_bins_per_step, const int image_w, const int block_w, const int block_h) {
     int image_h = source.size() / image_w;
 
     std::vector<double> ret(source.size());
     
+    double bin_size = invert_bins_per_step ? (double) 1.0 / bins_per_step : bins_per_step;
+    
     for (int y = 0; y < image_h; y++) {
         for (int x = 0; x < image_w; x++) {
-                ret[y * image_w + x] = abs(source[y * image_w + x] * bin_size) * sgn(source[y * image_w + x]);
+                ret[y * image_w + x] = abs(source[y * image_w + x] / bin_size) * sgn(source[y * image_w + x]);
         }
     }
 

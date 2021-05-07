@@ -9,22 +9,25 @@ template <typename T> struct canonical_huffman_table;
 
 struct image_header {
     uint16_t x,y;
-    uint8_t block_size, max_bit_length;
+    uint8_t block_size, max_bit_length, quantization_step;
 
     union {
         struct {
             //unsigned char unused : 4;
             //unsigned char unified : 1; //Metadata contains unified Huffman Table
             //unsigned char leveled : 1; //Data is structured Hierarchically
-            uint8_t unused : 6;
+            uint8_t unused : 5;
+            uint8_t invert_quantization_step : 1;
             uint8_t lossless : 1;
             uint8_t datatype : 1;
         } flag_data;
         uint8_t flags;
     };
 
-    image_header(uint16_t x, uint16_t y, uint8_t block_size, uint8_t max_bit_length, bool lossless, int datatype) :
-        x(x), y(y), block_size(block_size), max_bit_length(max_bit_length) {
+    image_header(uint16_t x, uint16_t y, uint8_t block_size, uint8_t max_bit_length,bool lossless, int datatype, bool invert_quantization_step, uint8_t quantization_step) :
+    //image_header(uint16_t x, uint16_t y, uint8_t block_size, uint8_t max_bit_length, bool lossless, int datatype) :
+        x(x), y(y), block_size(block_size), max_bit_length(max_bit_length), quantization_step(quantization_step) {
+            flag_data.invert_quantization_step = invert_quantization_step ? 1 : 0;
             flag_data.lossless = lossless ? 1 : 0;
             flag_data.datatype = datatype > 0 ? 1 : 0;
             flag_data.unused = 0;
@@ -38,6 +41,7 @@ struct image_header {
         std::cout << "Y Resolution: " << (int) y << std::endl;
         std::cout << "Block Size: " << (int) block_size << std::endl;
         std::cout << "Max Bit Length: " << (int) max_bit_length << std::endl;
+        std::cout << "Quantization Step: " << (int) quantization_step << std::endl;
         std::cout << "Flags: " << std::hex << (int) flags << std::dec << std::endl;
     }
 };
@@ -87,6 +91,8 @@ class io_write_buf {
             write_bits<decltype(header.block_size)>(header.block_size,sizeof(decltype(header.block_size)) * CHAR_BIT);
             std::cout << "Writing " << sizeof(decltype(header.max_bit_length)) * CHAR_BIT << " bits for header.max_bit_length" << std::endl;
             write_bits<decltype(header.max_bit_length)>(header.max_bit_length,sizeof(decltype(header.max_bit_length)) * CHAR_BIT);
+            std::cout << "Writing " << sizeof(decltype(header.quantization_step)) * CHAR_BIT << " bits for header.quantization_step" << std::endl;
+            write_bits<decltype(header.quantization_step)>(header.quantization_step,sizeof(decltype(header.quantization_step)) * CHAR_BIT);
             std::cout << "Writing " << sizeof(decltype(header.flag_data)) * CHAR_BIT << " bits for header.flag_data" << std::endl;
             write_bits<decltype(header.flags)>(header.flags,sizeof(decltype(header.flags)) * CHAR_BIT);
         }
@@ -187,6 +193,8 @@ class io_read_buf {
             header.block_size = read_bits<decltype(header.block_size)>(sizeof(decltype(header.block_size)) * CHAR_BIT);
             std::cout << "Reading " << sizeof(decltype(header.max_bit_length)) * CHAR_BIT << " bits for header.max_bit_length" << std::endl;
             header.max_bit_length = read_bits<decltype(header.max_bit_length)>(sizeof(decltype(header.max_bit_length)) * CHAR_BIT);
+            std::cout << "Reading " << sizeof(decltype(header.quantization_step)) * CHAR_BIT << " bits for header.quantization_step" << std::endl;
+            header.quantization_step = read_bits<decltype(header.quantization_step)>(sizeof(decltype(header.quantization_step)) * CHAR_BIT);
             std::cout << "Reading " << sizeof(decltype(header.flag_data)) * CHAR_BIT << " bits for header.flag_data" << std::endl;
             header.flags = read_bits<decltype(header.flags)>(sizeof(decltype(header.flag_data)) * CHAR_BIT);
             

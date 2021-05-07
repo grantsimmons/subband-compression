@@ -7,112 +7,165 @@
 #include "utils.hh"
 
 int main(int argc, char** argv) {
+        std::string infile_name;
+        bool reading = true;
+        bool debug = false;
 
-    //Check command line arguments. As of now, take a single image file
-    std::string file_names[argc-1];
-    if(argc == 1) {
-        std::cout << "No files given" << std::endl;
-        exit(1);
+        if(argc == 1) {
+            std::cout << "No files given" << std::endl;
+            exit(1);
+        }
+        else if(argc == 3) {
+            if((std::string) argv[1] == "-r") {
+                reading = true;
+            }
+            else if((std::string) argv[1] == "-w") {
+                reading = false;
+            }
+            else if((std::string) argv[1] == "-d") {
+                debug = true;
+            }
+            else {
+                //help()
+            }
+            infile_name = argv[2];
+        }
+        else {
+            //help()
+            exit(1);
+        }
+
+    if (!reading) {
+
+        //Open provided raw image data file
+        std::ifstream infile(infile_name, std::ios_base::binary);
+
+        //Read raw image data
+        //TODO: Implement OpenImageIO to read other data formats to internal structure
+        std::vector<uint8_t> image_pixel_data( (std::istreambuf_iterator<char>(infile)), std::istreambuf_iterator<char>());
+
+        //Compression Parameters:
+        const bool quantization_invert_bin_step = false;
+            //Added to compactly represent fractional numbers (for heavy compression)
+            //When quantization_invert_bin_step is false, quantization_bin_step represents the number of steps in a single digit increment
+                //E.g. quantization_invert_bin_step = false, quantization_bin_step = 4 => 4 bins between each floating point digit
+            //When quantization_invert_bin_step is true, quantization_bin_step represents the number of digit increments in a single quantization step
+                //E.g. quantization_invert_bin_step = true, quantization_bin_step = 4 => 0.25 bins between each floating point digit (or 4 digits per quantization step)
+                //Only use quantization_invert_bin_step when heavy lossy compression is desired
+        
+        const double quantization_bin_step = 4; //Best results: 4
+            //Magnitude of quantization
+            //If quantization_invert_bin_step is true, a higher value implies fewer quantization bins (more information loss)
+        
+        const int wavelet_block_size = 8; //Best results: 8
+            //Size of an image block
+            //Determine the size of an independent pixel block to be transformed 
+        
+        const int image_width = 1000;
+        const int image_height = 1000;
+        
+        const double quantization_threshold = 0.8; //Best results: 0.8
+            //All transform coefficients whose absolute values are below this value are set to 0
+            //TODO: Any value below 0.8 breaks output image
+
+        //Transform Image into Wavelet Decomposition
+        std::vector<double> image_transform = haar2d<double>(image_pixel_data,image_width,wavelet_block_size,wavelet_block_size);
+
+        //Threshold and Scalar Quantize for Lossy Compression
+        std::vector<int> image_quant = threshold_and_quantize(image_transform, quantization_bin_step,quantization_invert_bin_step, image_width,wavelet_block_size,wavelet_block_size,quantization_threshold);
+        std::vector<double> image_dequant = dequantize(image_quant, quantization_bin_step, quantization_invert_bin_step, image_width,wavelet_block_size,wavelet_block_size);
+
+        //Reconstruct Bitmap from Wavelet Decomposition
+        std::vector<uint8_t> reconstruction = ihaar2d<double>(image_dequant,image_width,wavelet_block_size,wavelet_block_size);
+
+        //Display Image Without File I/O
+        if(debug) {
+            dump_image(image_pixel_data, "orig.x");
+            dump_image(reconstruction, "reconstruction.x");
+        }
+
+        //Huffman Coding
+        auto symbol_frequency_table = generate_frequency_table<int>(image_quant); //Map Wavelet Coefficient Values to the number of their occurrences
+        InternalNode* huffman_root = generate_huffman_tree<int>(symbol_frequency_table); //Generate Huffman encoding based on frequency information
+        
+        //Canonical Coding
+        std::map<uint32_t,int> huffman_serialized = serialize_huffman_tree<int>(huffman_root,0); //Serialize the binary tree into a linear map
+        canonical_huffman_table<int> canon = generate_canonical_huffman_code<int>(huffman_serialized); //Generate a canonical Huffman code based on the serialized Huffman code bit lengths
+
+        //Data Translation
+        std::vector<uint32_t> data_translated = translate_canonical<int,uint32_t>(image_quant, canon.translation_map); //Translate the wavelet coefficients into the new canonical mapping
+
+        //Compile metadata into header
+        image_header header(image_width, image_height, wavelet_block_size, canon.max_bits, false, 0, quantization_invert_bin_step, quantization_bin_step);
+
+        //File Write
+        io_write_buf out_buf("out.wlt");
+
+        out_buf.write_header(header);
+        out_buf.write_canonical_huffman_table<int>(canon);
+        out_buf.write_data<uint32_t>(data_translated);
+        //header.print();
+
+        out_buf.close();
+
+    //End Compression Flow
     }
-    else if(argc >= 2) {
-        for(int counter = 1; counter < argc; counter++)
-            file_names[counter-1] = argv[counter];
+
+
+
+    if (reading) {
+    //Begin Decompression Flow
+        
+        //File Read
+
+        io_read_buf<int> in_buf(infile_name); //Open image file with buffer
+
+        image_header recovered_header = in_buf.read_header(); //Read Header
+        in_buf.read_canonical_huffman_table(); //Read Huffman Table 
+            //TODO: Remove redundant vector return
+        std::vector<int> recovered_data = in_buf.read_data();
+
+        //Dequantize decoded data
+        std::vector<double> recovered_coeffs = dequantize(recovered_data, recovered_header.quantization_step, recovered_header.flag_data.invert_quantization_step, recovered_header.x, recovered_header.block_size, recovered_header.block_size);
+
+        //Inverse Transform image data
+        std::vector<uint8_t> recovered_pixels = ihaar2d<double>(recovered_coeffs, recovered_header.x, recovered_header.block_size, recovered_header.block_size);
+        dump_image(recovered_pixels, "recovered.x"); //Dump to file for demonstration purposes
+
+    //End Decompression Flow
     }
 
-    //Open file
-    std::ifstream infile(file_names[0], std::ios_base::binary);
+    return 0;
+}
 
-    //Read raw image data
-    //TODO: Implement OpenImageIO to read other data formats to internal structure
-    std::vector<uint8_t> image_pixel_data( (std::istreambuf_iterator<char>(infile)), std::istreambuf_iterator<char>());
 
-    //Parameters:
-    const double quantization_bin_size = 0.25; //0.25
-    const int wavelet_block_size = 8; //8
-    const int image_width = 512;
-    const double quantization_threshold = 0.8; //Anything under 0.8 breaks
+/*
+    if(debug) {
+        //std::cout << (recovered_table.canonical_table == canon.canonical_table ? "OH YES" : "OH NO") << std::endl; 
+        
+        recovered_header.print();
 
-    //Transform Image into Wavelet Decomposition
-    std::vector<double> image_transform = haar2d<double>(image_pixel_data,image_width,wavelet_block_size,wavelet_block_size);
-    std::vector<double> image_transform2 = image_transform;
+        //for(int i = 0; i < canon.canonical_table.size(); i++) {
+        //    std::cout << "Canon: " << canon.canonical_table[i].first << ", " << canon.canonical_table[i].second << " ";
+        //    std::cout << "Recovered: " << recovered_table.canonical_table[i].first << ", " << recovered_table.canonical_table[i].second << std::endl;
+        //}
 
-    //Threshold and Scalar Quantize for Lossy Compression
-    std::vector<int> image_quant = threshold_and_quantize(image_transform,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size,quantization_threshold);
-    std::vector<double> image_dequant = dequantize(image_quant,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size);
+        std::cout << "Recovered Data size: " << recovered_data.size() << std::endl;
+        //std::cout << "Original size: " << data_translated.size() << std::endl;    
+        //print_vector<std::vector<int>>(diff<int,int>(image_quant, recovered_data), "ACTUAL RECONSTRUCTION DIFF", recovered_header.x);
+    }
+*/
+    
+    //std::vector<int> int_transform = haar2d<int>(image_pixel_data,512,8,8); //Lossless Compression
 
-    //TODO: Entropy Encoding
-    //TODO: Huffman Compression
+    //auto test = extract_levels_from_serial<int>(image_quant,512,8,8); //Experimental
 
-    //TODO: Write to File
-    //TODO: Read from File
-
-    //Reconstruct Bitmap from Wavelet Decomposition
-    std::vector<uint8_t> reconstruction = ihaar2d<double>(image_dequant,image_width,wavelet_block_size,wavelet_block_size);
-
-    //Display Image
-    dump_image(image_pixel_data, "orig.x");
-    dump_image(reconstruction, "reconstruction.x");
-
-    std::cout << (image_pixel_data == reconstruction ? "SUCCESS" : "FAILURE") << std::endl;
-
-    std::vector<int> int_transform = haar2d<int>(image_pixel_data,512,8,8);
-
-    auto test = extract_levels_from_serial<int>(image_quant,512,8,8);
-
-    int initial = 64;
-
-    // print_vector(test[0][2],"TEST0D",initial,6);
-
-     auto test_map = generate_frequency_table<int>(image_quant); //Map Wavelet Coefficient Values to the number of their occurrences
     // //auto test_map = generate_frequency_table<int>(test[2][2]);
     // for (auto test : test_map) {
     //     std::cout << (int) test.first << ": " << test.second << std::endl;
     // }
 
-    InternalNode* test1 = generate_huffman_tree<int>(test_map); //Generate Huffman encoding based on frequency information
 
-    std::map<uint32_t,int> serialize_test = serialize_huffman_tree<int>(test1,0); //Serialize the binary tree into a linear map
-
-    canonical_huffman_table<int> canon = generate_canonical_huffman_code<int>(serialize_test); //Generate a canonical Huffman code based on the serialized Huffman code bit lengths
-
-    std::vector<uint32_t> translated = translate_canonical<int,uint32_t>(image_quant, canon.translation_map); //Translate the wavelet coefficients into the new canonical mapping
-
-    std::map<uint32_t,int> inverse = invert_map<int,uint32_t>(canon.translation_map);
-
-    std::vector<int> recovered = translate_canonical<uint32_t,int>(translated,inverse); //Generate a fake map reconstruction
-
-    std::vector<int> canonical_loss = diff<int,int>(image_quant,recovered);
-
-    for(auto val : serialize_test) {
-        std::cout << val.first << " " << val.second << std::endl;
-    }
-
-    image_header header(512,512,8,canon.max_bits,true,0);
-
-    io_write_buf out_buf("test.bin");
-    out_buf.write_header(header);
-    out_buf.write_canonical_huffman_table<int>(canon);
-    out_buf.write_data<uint32_t>(translated);
-    header.print();
-    out_buf.close();
-
-    io_read_buf<int> in_buf("test.bin");
-    image_header test_header = in_buf.read_header();
-    canonical_huffman_table<int> recovered_table = in_buf.read_canonical_huffman_table();
-    std::cout << (recovered_table.canonical_table == canon.canonical_table ? "OH YES" : "OH NO") << std::endl;
-    for(int i = 0; i < canon.canonical_table.size(); i++) {
-        std::cout << "Canon: " << canon.canonical_table[i].first << ", " << canon.canonical_table[i].second << " ";
-        std::cout << "Recovered: " << recovered_table.canonical_table[i].first << ", " << recovered_table.canonical_table[i].second << std::endl;
-    }
-    std::vector<int> hail_mary = in_buf.read_data();
-    std::cout << "Vector size: " << hail_mary.size() << std::endl;
-    std::cout << "Original size: " << translated.size() << std::endl;
-    print_vector<std::vector<int>>(diff<int,int>(image_quant, hail_mary), "ACTUAL RECONSTRUCTION DIFF", 512);
-    std::vector<double> will_this_work_d = dequantize(hail_mary,quantization_bin_size,image_width,wavelet_block_size,wavelet_block_size);
-    std::vector<uint8_t> yes_it_will = ihaar2d<double>(will_this_work_d,512,8,8);
-    print_vector<std::vector<uint8_t>>(yes_it_will, "ACTUAL RECONSTRUCTION", 512);
-    dump_image(yes_it_will, "wtf.x");
-    test_header.print();
 
     // for(int i = 1; i < 4; i++) {
     //     for(int j = 0; j < 3; j++) {
@@ -133,6 +186,3 @@ int main(int argc, char** argv) {
     // print_vector(test[3][0],"TEST3H",initial*4,6);
     // print_vector(test[3][1],"TEST3V",initial*4,6);
     // print_vector(test[3][2],"TEST3D",initial*4,6);
-
-    return 0;
-}
