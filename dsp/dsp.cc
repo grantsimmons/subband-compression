@@ -140,17 +140,10 @@ std::vector<int> threshold_and_quantize(std::vector<double> source, const double
     
     for (int y = 0; y < image_h; y++) {
         for (int x = 0; x < image_w; x++) {
-            //if (x % block_w == 0 && y % block_h == 0) {
-            //    //std::cout << "Skipping " << x << ", " << y << " Value: " << source[y * image_w + x] << std::endl;
-            //    continue;
-            //}
-            //else {
-                //std::cout << "Quantizing " << x << ", " << y << " Value: " << source[y * image_w + x] << std::endl;
                 if (abs(source[y * image_w + x]) < threshold)
                     source[y * image_w + x] = 0;
 
                 source[y * image_w + x] = floor(abs(source[y * image_w + x] / bin_size)) * sgn(source[y * image_w + x]);
-            //}
         }
     }
 
@@ -161,20 +154,14 @@ std::vector<int> threshold_and_quantize(std::vector<double> source, const double
 
 std::vector<double> dequantize(std::vector<int> source, const double bin_size, const int image_w, const int block_w, const int block_h) {
     int image_h = source.size() / image_w;
+
+    std::vector<double> ret(source.size());
     
     for (int y = 0; y < image_h; y++) {
         for (int x = 0; x < image_w; x++) {
-            //if (x % block_w == 0 && y % block_h == 0) {
-            //    continue;
-            //}
-            //else {
-                source[y * image_w + x] = abs(source[y * image_w + x] * bin_size) * sgn(source[y * image_w + x]);
-                //vQ = sign(vI) .* (abs(vI)+.5) * T;
-            //}
+                ret[y * image_w + x] = abs(source[y * image_w + x] * bin_size) * sgn(source[y * image_w + x]);
         }
     }
-
-    std::vector<double> ret(source.begin(), source.end());
 
     return ret;
 }

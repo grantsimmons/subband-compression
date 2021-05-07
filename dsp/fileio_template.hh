@@ -16,7 +16,7 @@ struct image_header {
             //unsigned char unused : 4;
             //unsigned char unified : 1; //Metadata contains unified Huffman Table
             //unsigned char leveled : 1; //Data is structured Hierarchically
-            uint8_t unused : 4;
+            uint8_t unused : 6;
             uint8_t lossless : 1;
             uint8_t datatype : 1;
         } flag_data;
